@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Quizzes — PlaceReady AI{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h5 class="fw-bold mb-4"><i class="fas fa-tasks me-2 text-primary"></i>Assessment Quizzes</h5>
+  <div class="row g-4">
+
+    {% set quizzes = [
+      ('Aptitude', 'aptitude_quiz', 'fas fa-calculator', 'primary', 'aptitude_taken',
+       'Tests logical reasoning, quantitative aptitude & problem solving.'),
+      ('Technical', 'technical_quiz', 'fas fa-code', 'info', 'technical_taken',
+       'Tests Python, SQL, web basics & programming logic.'),
+      ('Communication', 'communication_quiz', 'fas fa-comments', 'warning', 'communication_taken',
+       'Tests English grammar, vocabulary & professional communication.')
+    ] %}
+
+    {% for name, route, icon, color, field, desc in quizzes %}
+    <div class="col-md-4">
+      <div class="card quiz-card h-100 p-4 shadow-sm text-center">
+        <div class="quiz-icon bg-{{ color }}-light rounded-circle mx-auto mb-3">
+          <i class="{{ icon }} fa-2x text-{{ color }}"></i>
+        </div>
+        <h6 class="fw-bold mb-2">{{ name }} Quiz</h6>
+        <p class="text-muted small mb-3">{{ desc }}</p>
+        {% if score and score[field] %}
+          <div class="score-badge mb-3">
+            <span class="fs-3 fw-bold text-{{ color }}">{{ score[name.lower() + '_score'] }}</span>
+            <span class="text-muted">/100</span>
+          </div>
+          <span class="badge bg-success mb-2">Completed ✓</span><br/>
+          <a href="{{ url_for('quiz.' + route) }}" class="btn btn-sm btn-outline-{{ color }} mt-2">Retake</a>
+        {% else %}
+          <a href="{{ url_for('quiz.' + route) }}" class="btn btn-{{ color }} w-100">Start Quiz</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+
+  {% if score and score.aptitude_taken and score.technical_taken and score.communication_taken %}
+  <div class="mt-4 text-center">
+    <a href="{{ url_for('predict.predict') }}" class="btn btn-primary btn-lg px-5">
+      <i class="fas fa-magic me-2"></i>Get AI Placement Prediction
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

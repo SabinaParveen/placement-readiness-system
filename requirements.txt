@@ -1,0 +1,17 @@
+flask
+flask-login
+flask-sqlalchemy
+flask-wtf
+werkzeug
+scikit-learn
+xgboost
+pandas
+numpy
+joblib
+shap
+matplotlib
+seaborn
+gunicorn
+psycopg2-binary
+python-dotenv
+email-validator

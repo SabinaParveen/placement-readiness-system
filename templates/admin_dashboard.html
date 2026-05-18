@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — PlaceReady AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="fw-bold mb-0"><i class="fas fa-shield-alt me-2 text-primary"></i>Admin Dashboard</h5>
+    <a href="{{ url_for('admin.download_report') }}" class="btn btn-success btn-sm">
+      <i class="fas fa-download me-1"></i>Download CSV Report
+    </a>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card card p-3 text-center">
+        <div class="fs-2 fw-bold text-primary">{{ total_students }}</div>
+        <div class="text-muted small">Total Students</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card card p-3 text-center">
+        <div class="fs-2 fw-bold text-info">{{ total_predicted }}</div>
+        <div class="text-muted small">Predictions Made</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card card p-3 text-center">
+        <div class="fs-2 fw-bold text-success">{{ likely_placed }}</div>
+        <div class="text-muted small">Likely Placed</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card card p-3 text-center">
+        <div class="fs-2 fw-bold text-warning">{{ avg_readiness }}%</div>
+        <div class="text-muted small">Avg Readiness</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Table -->
+  <div class="card shadow">
+    <div class="card-header d-flex justify-content-between align-items-center py-3">
+      <span class="fw-600"><i class="fas fa-users me-2"></i>All Students</span>
+      <a href="{{ url_for('admin.questions') }}" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-question-circle me-1"></i>Manage Questions
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th><th>Name</th><th>Dept</th><th>CGPA</th>
+            <th>Aptitude</th><th>Technical</th><th>Comm.</th>
+            <th>Readiness</th><th>Result</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s, q, p in students %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="fw-500">{{ s.full_name }}</td>
+            <td>{{ s.department or '—' }}</td>
+            <td>{{ s.cgpa or '—' }}</td>
+            <td>{{ q.aptitude_score if q else '—' }}</td>
+            <td>{{ q.technical_score if q else '—' }}</td>
+            <td>{{ q.communication_score if q else '—' }}</td>
+            <td>
+              {% if p %}
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:6px;">
+                    <div class="progress-bar bg-{% if p.readiness_percentage >= 70 %}success{% elif p.readiness_percentage >= 50 %}warning{% else %}danger{% endif %}"
+                         style="width:{{ p.readiness_percentage }}%"></div>
+                  </div>
+                  <span class="small fw-500">{{ p.readiness_percentage }}%</span>
+                </div>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if p %}
+                <span class="badge bg-{% if p.placement_result == 'Likely Placed' %}success{% else %}danger{% endif %}">
+                  {{ p.placement_result }}
+                </span>
+              {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('admin.student_detail', sid=s.id) }}" class="btn btn-xs btn-outline-primary btn-sm">
+                View
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="10" class="text-center text-muted py-4">No students registered yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

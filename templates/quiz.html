@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz_type }} Quiz — PlaceReady AI{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:760px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0"><i class="fas fa-clipboard-check me-2 text-primary"></i>{{ quiz_type }} Assessment</h5>
+    <div class="timer-box badge bg-danger fs-6 px-3 py-2" id="timer">
+      <i class="fas fa-clock me-1"></i><span id="timerDisplay">--:--</span>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress mb-4" style="height:6px;">
+    <div class="progress-bar bg-primary" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <form method="POST" id="quizForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    {% for q in questions %}
+    <div class="quiz-question card p-4 mb-3 shadow-sm" id="qCard{{ loop.index }}"
+         style="display:{% if loop.index == 1 %}block{% else %}none{% endif %};">
+      <div class="d-flex justify-content-between mb-3">
+        <span class="badge bg-primary-light text-primary">Question {{ loop.index }} of {{ questions|length }}</span>
+        <span class="badge bg-secondary">{{ q.difficulty|capitalize }}</span>
+      </div>
+      <p class="fw-500 mb-3">{{ q.question_text }}</p>
+      <div class="options">
+        {% for opt_letter, opt_text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+        <label class="option-label d-flex align-items-center p-3 mb-2 rounded border cursor-pointer"
+               for="q{{ q.id }}_{{ opt_letter }}">
+          <input type="radio" class="d-none" name="q_{{ q.id }}"
+                 id="q{{ q.id }}_{{ opt_letter }}" value="{{ opt_letter }}"/>
+          <span class="opt-badge me-3">{{ opt_letter }}</span>
+          <span>{{ opt_text }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Navigation Buttons -->
+    <div class="d-flex justify-content-between mt-3">
+      <button type="button" class="btn btn-outline-secondary" id="prevBtn" onclick="navigate(-1)" disabled>
+        <i class="fas fa-chevron-left me-1"></i>Previous
+      </button>
+      <button type="button" class="btn btn-primary" id="nextBtn" onclick="navigate(1)">
+        Next<i class="fas fa-chevron-right ms-1"></i>
+      </button>
+      <button type="submit" class="btn btn-success d-none" id="submitBtn">
+        <i class="fas fa-check-circle me-1"></i>Submit Quiz
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+const total   = {{ questions|length }};
+const timeLimit = {{ timer }};
+let current   = 1;
+let timeLeft  = timeLimit;
+
+// Timer
+const timerEl = document.getElementById('timerDisplay');
+const interval = setInterval(() => {
+  timeLeft--;
+  const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+  const s = (timeLeft % 60).toString().padStart(2,'0');
+  timerEl.textContent = `${m}:${s}`;
+  if (timeLeft <= 60) document.getElementById('timer').classList.add('bg-warning');
+  if (timeLeft <= 0) { clearInterval(interval); document.getElementById('quizForm').submit(); }
+}, 1000);
+
+// Navigation
+function navigate(dir) {
+  document.getElementById('qCard' + current).style.display = 'none';
+  current += dir;
+  document.getElementById('qCard' + current).style.display = 'block';
+
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('progressBar').style.width = ((current/total)*100) + '%';
+
+  if (current === total) {
+    document.getElementById('nextBtn').classList.add('d-none');
+    document.getElementById('submitBtn').classList.remove('d-none');
+  } else {
+    document.getElementById('nextBtn').classList.remove('d-none');
+    document.getElementById('submitBtn').classList.add('d-none');
+  }
+}
+
+// Option selection style
+document.querySelectorAll('.option-label').forEach(lbl => {
+  lbl.addEventListener('click', () => {
+    const name = lbl.querySelector('input').name;
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+      r.closest('.option-label').classList.remove('selected');
+    });
+    lbl.classList.add('selected');
+    lbl.querySelector('input').checked = true;
+  });
+});
+</script>
+{% endblock %}
