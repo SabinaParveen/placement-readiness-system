@@ -1,7 +1,18 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, QuizQuestion, QuizScore
+from models import db, Admin, QuizQuestion, QuizScore
 import random
+
+def student_required(f):
+    """Block admin from accessing student-only pages."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if isinstance(current_user._get_current_object(), Admin):
+            flash('This page is for students only.', 'warning')
+            return redirect(url_for('admin.dashboard'))
+        return f(*args, **kwargs)
+    return decorated
 
 quiz_bp = Blueprint('quiz', __name__)
 
