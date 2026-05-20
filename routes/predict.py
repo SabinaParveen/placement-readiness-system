@@ -1,7 +1,15 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import db, QuizScore, Prediction
-import joblib
+from models import db, Admin, QuizScore, Prediction
+from functools import wraps
+def student_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if isinstance(current_user._get_current_object(), Admin):
+            flash('This page is for students only.', 'warning')
+            return redirect(url_for('admin.dashboard'))
+        return f(*args, **kwargs)
+    return decorated
 import numpy as np
 import json
 import os
@@ -57,6 +65,7 @@ def _generate_recommendations(data: dict, readiness: float) -> list:
 # ── PREDICT ───────────────────────────────────
 @predict_bp.route('/predict')
 @login_required
+@student_required 
 def predict():
     if not current_user.profile_complete:
         flash('Please complete your profile first.', 'warning')

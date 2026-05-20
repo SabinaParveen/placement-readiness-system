@@ -1,11 +1,16 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from models import db, Admin, QuizQuestion, QuizScore
+from functools import wraps
 import random
 
+quiz_bp = Blueprint('quiz', __name__)
+
+QUIZ_QUESTION_COUNT = 10
+
+
+# ── BLOCK ADMIN FROM STUDENT PAGES ────────────
 def student_required(f):
-    """Block admin from accessing student-only pages."""
-    from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
         if isinstance(current_user._get_current_object(), Admin):
@@ -14,9 +19,6 @@ def student_required(f):
         return f(*args, **kwargs)
     return decorated
 
-quiz_bp = Blueprint('quiz', __name__)
-
-QUIZ_QUESTION_COUNT = 10  # questions per quiz
 
 def _get_or_create_score(student_id):
     score = QuizScore.query.filter_by(student_id=student_id).first()
@@ -30,11 +32,11 @@ def _get_or_create_score(student_id):
 # ── QUIZ HOME ─────────────────────────────────
 @quiz_bp.route('/quiz')
 @login_required
+@student_required
 def quiz_home():
     if not current_user.profile_complete:
         flash('Please complete your profile before taking quizzes.', 'warning')
         return redirect(url_for('student.profile'))
-
     score = _get_or_create_score(current_user.id)
     return render_template('quiz_home.html', score=score)
 
@@ -42,13 +44,12 @@ def quiz_home():
 # ── APTITUDE QUIZ ─────────────────────────────
 @quiz_bp.route('/quiz/aptitude', methods=['GET', 'POST'])
 @login_required
+@student_required
 def aptitude_quiz():
     score_record = _get_or_create_score(current_user.id)
 
     if request.method == 'POST':
-        questions_data = request.form.get('questions_data')
         answers = {k: v for k, v in request.form.items() if k.startswith('q_')}
-
         correct = 0
         total   = 0
         results = []
@@ -62,38 +63,32 @@ def aptitude_quiz():
                 if is_correct:
                     correct += 1
                 results.append({
-                    'question': q.question_text,
-                    'selected': selected,
-                    'correct':  q.correct_answer,
+                    'question':   q.question_text,
+                    'selected':   selected,
+                    'correct':    q.correct_answer,
                     'is_correct': is_correct
                 })
 
         score_val = round((correct / total) * 100, 2) if total > 0 else 0
-        score_record.aptitude_score  = score_val
-        score_record.aptitude_taken  = True
+        score_record.aptitude_score = score_val
+        score_record.aptitude_taken = True
         db.session.commit()
 
         flash(f'Aptitude Quiz completed! Score: {score_val}/100', 'success')
         return render_template('quiz_result.html',
-            quiz_type='Aptitude',
-            score=score_val,
-            correct=correct,
-            total=total,
-            results=results
-        )
+            quiz_type='Aptitude', score=score_val,
+            correct=correct, total=total, results=results)
 
     questions = QuizQuestion.query.filter_by(category='aptitude').all()
     questions = random.sample(questions, min(QUIZ_QUESTION_COUNT, len(questions)))
     return render_template('quiz.html',
-        quiz_type='Aptitude',
-        questions=questions,
-        timer=600  # 10 minutes
-    )
+        quiz_type='Aptitude', questions=questions, timer=600)
 
 
 # ── TECHNICAL QUIZ ────────────────────────────
 @quiz_bp.route('/quiz/technical', methods=['GET', 'POST'])
 @login_required
+@student_required
 def technical_quiz():
     score_record = _get_or_create_score(current_user.id)
 
@@ -112,38 +107,32 @@ def technical_quiz():
                 if is_correct:
                     correct += 1
                 results.append({
-                    'question': q.question_text,
-                    'selected': selected,
-                    'correct':  q.correct_answer,
+                    'question':   q.question_text,
+                    'selected':   selected,
+                    'correct':    q.correct_answer,
                     'is_correct': is_correct
                 })
 
         score_val = round((correct / total) * 100, 2) if total > 0 else 0
-        score_record.technical_score  = score_val
-        score_record.technical_taken  = True
+        score_record.technical_score = score_val
+        score_record.technical_taken = True
         db.session.commit()
 
         flash(f'Technical Quiz completed! Score: {score_val}/100', 'success')
         return render_template('quiz_result.html',
-            quiz_type='Technical',
-            score=score_val,
-            correct=correct,
-            total=total,
-            results=results
-        )
+            quiz_type='Technical', score=score_val,
+            correct=correct, total=total, results=results)
 
     questions = QuizQuestion.query.filter_by(category='technical').all()
     questions = random.sample(questions, min(QUIZ_QUESTION_COUNT, len(questions)))
     return render_template('quiz.html',
-        quiz_type='Technical',
-        questions=questions,
-        timer=600
-    )
+        quiz_type='Technical', questions=questions, timer=600)
 
 
 # ── COMMUNICATION QUIZ ────────────────────────
 @quiz_bp.route('/quiz/communication', methods=['GET', 'POST'])
 @login_required
+@student_required
 def communication_quiz():
     score_record = _get_or_create_score(current_user.id)
 
@@ -162,30 +151,23 @@ def communication_quiz():
                 if is_correct:
                     correct += 1
                 results.append({
-                    'question': q.question_text,
-                    'selected': selected,
-                    'correct':  q.correct_answer,
+                    'question':   q.question_text,
+                    'selected':   selected,
+                    'correct':    q.correct_answer,
                     'is_correct': is_correct
                 })
 
         score_val = round((correct / total) * 100, 2) if total > 0 else 0
-        score_record.communication_score  = score_val
-        score_record.communication_taken  = True
+        score_record.communication_score = score_val
+        score_record.communication_taken = True
         db.session.commit()
 
         flash(f'Communication Quiz completed! Score: {score_val}/100', 'success')
         return render_template('quiz_result.html',
-            quiz_type='Communication',
-            score=score_val,
-            correct=correct,
-            total=total,
-            results=results
-        )
+            quiz_type='Communication', score=score_val,
+            correct=correct, total=total, results=results)
 
     questions = QuizQuestion.query.filter_by(category='communication').all()
     questions = random.sample(questions, min(QUIZ_QUESTION_COUNT, len(questions)))
     return render_template('quiz.html',
-        quiz_type='Communication',
-        questions=questions,
-        timer=480
-    )
+        quiz_type='Communication', questions=questions, timer=480)
